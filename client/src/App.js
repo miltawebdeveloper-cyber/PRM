@@ -28,6 +28,10 @@ import Notifications from "./pages/notifications/Notifications";
 import Profile from "./pages/profile/Profile";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useAuth } from "./context/AuthContext";
+import Sprints from "./pages/sprints/Sprints";
+import Portfolio from "./pages/reports/Portfolio";
+import Workload from "./pages/reports/Workload";
+import Templates from "./pages/projects/Templates";
 
 function GuestRoute({ children }) {
   const { isAuthenticated, isBootstrapping } = useAuth();
@@ -240,6 +244,38 @@ function App() {
         element={
           <ProtectedRoute allowedRoles={["Admin", "Manager", "Employee", "Client"]}>
             <Profile />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/sprints"
+        element={
+          <ProtectedRoute allowedRoles={["Admin", "Manager", "Employee"]}>
+            <Sprints />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports/portfolio"
+        element={
+          <ProtectedRoute allowedRoles={["Admin", "Manager"]}>
+            <Portfolio />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/reports/workload"
+        element={
+          <ProtectedRoute allowedRoles={["Admin", "Manager"]}>
+            <Workload />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/projects/templates"
+        element={
+          <ProtectedRoute allowedRoles={["Admin", "Manager"]}>
+            <Templates />
           </ProtectedRoute>
         }
       />

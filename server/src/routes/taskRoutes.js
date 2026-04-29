@@ -4,12 +4,21 @@ const router = express.Router();
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 const taskController = require("../controllers/taskController");
+const upload = require("../config/upload");
 
 router.post(
   "/",
   authMiddleware,
   roleMiddleware(["Manager", "Admin"]),
   taskController.createTask
+);
+
+router.post(
+  "/import",
+  authMiddleware,
+  roleMiddleware(["Manager", "Admin"]),
+  upload.single("file"),
+  taskController.importTasks
 );
 
 router.get(

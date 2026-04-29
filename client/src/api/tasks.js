@@ -44,3 +44,10 @@ export async function getTaskActivity(taskId) {
   const response = await api.get(`/tasks/${taskId}/activity`);
   return response.data;
 }
+
+export async function importTasks(formData) {
+  const response = await api.post("/tasks/import", formData, {
+    headers: { "Content-Type": "multipart/form-data" }
+  });
+  return response.data;
+}

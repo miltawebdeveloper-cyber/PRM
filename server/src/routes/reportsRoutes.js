@@ -46,5 +46,18 @@ router.get(
   roleMiddleware(["Admin", "Manager"]),
   reportsController.getHeatmapReport
 );
+router.get(
+  "/workload",
+  authMiddleware,
+  roleMiddleware(["Admin", "Manager"]),
+  reportsController.getWorkloadReport
+);
+
+router.get(
+  "/portfolio",
+  authMiddleware,
+  roleMiddleware(["Admin", "Manager"]),
+  reportsController.getPortfolioReport
+);
 
 module.exports = router;

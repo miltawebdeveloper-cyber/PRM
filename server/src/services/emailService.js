@@ -136,6 +136,31 @@ exports.sendWelcomeEmail = async ({ name, email, username, password, role, login
   });
 };
 
+exports.sendPasswordResetEmail = async ({ name, email, resetToken, resetUrl }) => {
+  await sendEmail({
+    to: email,
+    subject: `[Milta PRM] Password Reset Request`,
+    html: `
+      <div style="font-family:sans-serif;max-width:520px;margin:0 auto">
+        <div style="background:linear-gradient(135deg,#0b66e4,#1077ca);padding:24px;border-radius:12px 12px 0 0">
+          <h1 style="margin:0;color:#fff;font-size:20px">Password Reset</h1>
+        </div>
+        <div style="background:#fff;padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 12px 12px">
+          <p>Hi <strong>${name}</strong>,</p>
+          <p>We received a request to reset your Milta PRM password. Click the button below to set a new password:</p>
+          <a href="${resetUrl}" style="display:inline-block;background:#0b66e4;color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:700;font-size:14px;margin:12px 0">
+            Reset My Password
+          </a>
+          <p style="margin-top:16px;font-size:13px;color:#64748b">Or copy this link into your browser:<br>
+            <code style="word-break:break-all;color:#0b66e4">${resetUrl}</code>
+          </p>
+          <p style="font-size:12px;color:#94a3b8;margin-top:20px">This link expires in 1 hour. If you did not request a password reset, ignore this email.</p>
+        </div>
+      </div>
+    `,
+  });
+};
+
 exports.sendMilestoneDueEmail = async ({ userName, email, milestoneTitle, dueDate, projectTitle }) => {
   await sendEmail({
     to: email,

@@ -5,6 +5,21 @@ const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 const projectController = require("../controllers/projectController");
 
+// Templates (must be before /:id)
+router.get(
+  "/templates",
+  authMiddleware,
+  roleMiddleware(["Admin", "Manager"]),
+  projectController.getProjectTemplates
+);
+
+router.post(
+  "/from-template/:templateId",
+  authMiddleware,
+  roleMiddleware(["Admin", "Manager"]),
+  projectController.createFromTemplate
+);
+
 router.post(
   "/",
   authMiddleware,
@@ -47,25 +62,31 @@ router.patch(
   projectController.updateProjectStatus
 );
 
-// ✅ Project Notes
-router.get(
-  "/:id/notes",
-  authMiddleware,
-  projectController.getProjectNotes
-);
-
 router.post(
-  "/:id/notes",
+  "/:id/save-as-template",
   authMiddleware,
-  projectController.addProjectNote
+  roleMiddleware(["Admin", "Manager"]),
+  projectController.saveAsTemplate
 );
 
-// ✅ Project Budget
+// Project Notes
+router.get("/:id/notes", authMiddleware, projectController.getProjectNotes);
+router.post("/:id/notes", authMiddleware, projectController.addProjectNote);
+
+// Project Budget
 router.get(
   "/:id/budget",
   authMiddleware,
   roleMiddleware(["Admin", "Manager"]),
   projectController.getProjectBudget
+);
+
+// Project Activity Feed
+router.get(
+  "/:id/activity",
+  authMiddleware,
+  roleMiddleware(["Admin", "Manager"]),
+  projectController.getProjectActivity
 );
 
 module.exports = router;

@@ -27,6 +27,8 @@ const ProjectNoteModel = require("./ProjectNote");
 const ExpenseModel = require("./Expense");
 const SprintModel = require("./Sprint");
 const CustomFieldModel = require("./CustomField");
+const ForumPostModel = require("./ForumPost");
+const AnnouncementModel = require("./Announcement");
 
 const Role = RoleModel(sequelize, DataTypes);
 const User = UserModel(sequelize, DataTypes);
@@ -54,6 +56,8 @@ const ProjectNote = ProjectNoteModel(sequelize, DataTypes);
 const Expense = ExpenseModel(sequelize, DataTypes);
 const Sprint = SprintModel(sequelize, DataTypes);
 const CustomField = CustomFieldModel(sequelize, DataTypes);
+const ForumPost = ForumPostModel(sequelize, DataTypes);
+const Announcement = AnnouncementModel(sequelize, DataTypes);
 
 Role.hasMany(User, { foreignKey: "roleId" });
 User.belongsTo(Role, { foreignKey: "roleId" });
@@ -201,6 +205,16 @@ Task.belongsTo(Sprint, { foreignKey: "sprintId", as: "Sprint" });
 User.hasMany(CustomField, { foreignKey: "createdById", as: "CustomFields" });
 CustomField.belongsTo(User, { foreignKey: "createdById", as: "CreatedBy" });
 
+// ForumPost
+Project.hasMany(ForumPost, { foreignKey: "projectId", as: "ForumPosts" });
+ForumPost.belongsTo(Project, { foreignKey: "projectId", as: "Project" });
+User.hasMany(ForumPost, { foreignKey: "authorId", as: "ForumPosts" });
+ForumPost.belongsTo(User, { foreignKey: "authorId", as: "Author" });
+
+// Announcement
+User.hasMany(Announcement, { foreignKey: "authorId", as: "Announcements" });
+Announcement.belongsTo(User, { foreignKey: "authorId", as: "Author" });
+
 module.exports = {
   sequelize,
   Role,
@@ -229,4 +243,6 @@ module.exports = {
   Expense,
   Sprint,
   CustomField,
+  ForumPost,
+  Announcement,
 };

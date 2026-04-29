@@ -310,6 +310,121 @@ async function getHeatmapReport() {
   });
 }
 
+async function getWorkloadReport() {
+  const { Op } = require("sequelize");
+  const now = new Date();
+  const in30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const standardWeeklyHours = 40;
+
+  const users = await User.findAll({
+    where: { is_active: true },
+    attributes: ["id", "name", "username", "hourly_rate"],
+    include: [
+      {
+        model: Task,
+        as: "AssignedTasks",
+        where: { status: { [Op.ne]: "Completed" } },
+        attributes: ["id", "task_name", "task_id", "status", "priority", "due_date", "estimated_hours", "projectId"],
+        required: false,
+        include: [{ model: Project, as: "Project", attributes: ["id", "project_title", "project_code"], required: false }],
+      },
+    ],
+  });
+
+  return users.map((u) => {
+    const tasks = u.AssignedTasks || [];
+    const totalEstimated = tasks.reduce((s, t) => s + Number(t.estimated_hours || 0), 0);
+    const overdue = tasks.filter((t) => t.due_date && new Date(t.due_date) < now).length;
+    const dueSoon = tasks.filter((t) => {
+      if (!t.due_date) return false;
+      const d = new Date(t.due_date);
+      return d >= now && d <= in30;
+    }).length;
+
+    const utilization = Math.round((totalEstimated / (standardWeeklyHours * 4)) * 100);
+    const status = utilization > 100 ? "overloaded" : utilization > 75 ? "busy" : utilization > 30 ? "normal" : "available";
+
+    return {
+      userId: u.id,
+      name: u.name,
+      username: u.username,
+      taskCount: tasks.length,
+      estimatedHours: Number(totalEstimated.toFixed(1)),
+      overdueCount: overdue,
+      dueSoonCount: dueSoon,
+      utilization,
+      status,
+      tasks: tasks.map((t) => ({
+        id: t.id,
+        task_id: t.task_id,
+        task_name: t.task_name,
+        status: t.status,
+        priority: t.priority,
+        due_date: t.due_date,
+        estimated_hours: t.estimated_hours,
+        project: t.Project ? { id: t.Project.id, title: t.Project.project_title } : null,
+      })),
+    };
+  });
+}
+
+async function getPortfolioReport() {
+  const { Expense } = require("../models");
+
+  const projects = await Project.findAll({
+    where: { is_template: false },
+    include: [
+      { model: Client, as: "Client", attributes: ["id", "name"] },
+      { model: ProjectGroup, as: "ProjectGroup", attributes: ["id", "name", "color"] },
+      {
+        model: Task,
+        as: "Tasks",
+        attributes: ["id", "status", "priority", "estimated_hours", "due_date"],
+        required: false,
+      },
+      { model: Expense, as: "Expenses", attributes: ["amount"], required: false },
+    ],
+    order: [["createdAt", "DESC"]],
+  });
+
+  const now = new Date();
+
+  return projects.map((proj) => {
+    const tasks = proj.Tasks || [];
+    const total = tasks.length;
+    const completed = tasks.filter((t) => t.status === "Completed").length;
+    const overdue = tasks.filter(
+      (t) => t.due_date && new Date(t.due_date) < now && t.status !== "Completed"
+    ).length;
+    const criticalCount = tasks.filter((t) => t.priority === "Critical").length;
+    const estimatedHours = tasks.reduce((s, t) => s + Number(t.estimated_hours || 0), 0);
+    const expenses = (proj.Expenses || []).reduce((s, e) => s + Number(e.amount || 0), 0);
+    const health =
+      overdue > 2 || criticalCount > 3 ? "at_risk" : overdue > 0 ? "needs_attention" : "on_track";
+
+    return {
+      id: proj.id,
+      project_code: proj.project_code,
+      project_title: proj.project_title,
+      status: proj.status,
+      progress: proj.progress,
+      start_date: proj.start_date,
+      end_date: proj.end_date,
+      budget_usd: proj.budget_usd,
+      expenses: Number(expenses.toFixed(2)),
+      client: proj.Client,
+      group: proj.ProjectGroup,
+      taskCount: total,
+      completedTasks: completed,
+      overdueTasks: overdue,
+      criticalTasks: criticalCount,
+      estimatedHours: Number(estimatedHours.toFixed(1)),
+      completionPct: total > 0 ? Math.round((completed / total) * 100) : proj.progress,
+      health,
+    };
+  });
+}
+
 module.exports = {
   getTimesheetReport,
   getProjectReport,
@@ -317,4 +432,6 @@ module.exports = {
   getUtilizationReport,
   getProfitabilityReport,
   getHeatmapReport,
+  getWorkloadReport,
+  getPortfolioReport,
 };

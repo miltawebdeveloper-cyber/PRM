@@ -26,6 +26,8 @@ const approvalRoutes = require("./routes/approvalRoutes");
 const expenseRoutes = require("./routes/expenseRoutes");
 const sprintRoutes = require("./routes/sprintRoutes");
 const customFieldRoutes = require("./routes/customFieldRoutes");
+const forumPostRoutes = require("./routes/forumPostRoutes");
+const announcementRoutes = require("./routes/announcementRoutes");
 const errorHandler = require("./middleware/errorHandler");
 const { apiRateLimit } = require("./middleware/rateLimit");
 
@@ -76,6 +78,8 @@ app.use("/api/approvals", approvalRoutes);
 app.use("/api/expenses", expenseRoutes);
 app.use("/api/sprints", sprintRoutes);
 app.use("/api/custom-fields", customFieldRoutes);
+app.use("/api/forum-posts", forumPostRoutes);
+app.use("/api/announcements", announcementRoutes);
 
 app.use(errorHandler);
 

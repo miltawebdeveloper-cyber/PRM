@@ -122,3 +122,51 @@ exports.getBacklog = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch backlog" });
   }
 };
+
+exports.getBurndown = async (req, res) => {
+  try {
+    const sprint = await Sprint.findByPk(req.params.id, {
+      include: [{ model: Task, as: "Tasks", attributes: ["id", "status", "estimated_hours", "createdAt", "updatedAt"] }],
+    });
+    if (!sprint) return res.status(404).json({ message: "Sprint not found" });
+
+    const tasks = sprint.Tasks || [];
+    const totalPoints = tasks.reduce((sum, t) => sum + Number(t.estimated_hours || 1), 0);
+    const start = sprint.start_date ? new Date(sprint.start_date) : new Date(sprint.createdAt);
+    const end = sprint.end_date ? new Date(sprint.end_date) : new Date(start.getTime() + 14 * 24 * 60 * 60 * 1000);
+
+    const days = [];
+    const current = new Date(start);
+    while (current <= end) {
+      days.push(new Date(current));
+      current.setDate(current.getDate() + 1);
+    }
+    const totalDays = days.length - 1 || 1;
+
+    const burndown = days.map((day, idx) => {
+      const ideal = totalPoints - (totalPoints * idx) / totalDays;
+      const completedOnDay = tasks
+        .filter((t) => t.status === "Completed" && new Date(t.updatedAt) <= day)
+        .reduce((sum, t) => sum + Number(t.estimated_hours || 1), 0);
+      const actual = totalPoints - completedOnDay;
+      return {
+        date: day.toISOString().split("T")[0],
+        ideal: Math.max(0, Math.round(ideal * 10) / 10),
+        actual: Math.max(0, Math.round(actual * 10) / 10),
+      };
+    });
+
+    res.json({
+      sprintId: sprint.id,
+      name: sprint.name,
+      totalPoints,
+      start: start.toISOString().split("T")[0],
+      end: end.toISOString().split("T")[0],
+      taskCount: tasks.length,
+      completedCount: tasks.filter((t) => t.status === "Completed").length,
+      burndown,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to generate burndown" });
+  }
+};

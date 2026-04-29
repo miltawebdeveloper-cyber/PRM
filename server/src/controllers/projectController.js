@@ -27,10 +27,17 @@ exports.getProjectById = async (req, res) => {
   }
 };
 
-
 exports.updateProject = async (req, res) => {
   try {
     const project = await projectService.updateProject(req.params.id, req.body, req.user);
+    await logActivity({
+      actorId: req.user.id,
+      action: "project_updated",
+      entityType: "project",
+      entityId: project.id,
+      projectId: project.id,
+      message: `${req.user.name || req.user.username || "User"} updated project ${project.project_code}`,
+    });
     return res.json(project);
   } catch (error) {
     return res.status(error.status || 500).json({ message: error.message || "Failed to update project" });
@@ -48,7 +55,7 @@ exports.deleteProject = async (req, res) => {
 
 exports.updateProjectStatus = async (req, res) => {
   try {
-    const project = await projectService.updateProjectStatus(req.params.id, req.body.status, req.user);
+    const project = await projectService.updateProject(req.params.id, { status: req.body.status }, req.user);
     return res.json(project);
   } catch (error) {
     return res.status(error.status || 500).json({ message: error.message || "Failed to update project status" });
@@ -81,6 +88,16 @@ exports.getProjectBudget = async (req, res) => {
     return res.status(error.status || 500).json({ message: error.message || "Failed to fetch project budget" });
   }
 };
+
+exports.getProjectActivity = async (req, res) => {
+  try {
+    const activity = await projectService.getProjectActivity(req.params.id);
+    return res.json(activity);
+  } catch (error) {
+    return res.status(error.status || 500).json({ message: error.message || "Failed to fetch project activity" });
+  }
+};
+
 exports.getProjects = async (req, res) => {
   try {
     const projects = await projectService.getProjects(req.user);
@@ -90,3 +107,56 @@ exports.getProjects = async (req, res) => {
   }
 };
 
+exports.getProjectTemplates = async (req, res) => {
+  try {
+    const templates = await projectService.getProjectTemplates();
+    return res.json(templates);
+  } catch (error) {
+    return res.status(error.status || 500).json({ message: error.message || "Failed to fetch templates" });
+  }
+};
+
+exports.createFromTemplate = async (req, res) => {
+  try {
+    const project = await projectService.createFromTemplate(req.params.templateId, req.body, req.user);
+    await logActivity({
+      actorId: req.user.id,
+      action: "project_created_from_template",
+      entityType: "project",
+      entityId: project.id,
+      projectId: project.id,
+      message: `${req.user.name || req.user.username || "User"} created project ${project.project_code} from template`,
+    });
+    return res.status(201).json(project);
+  } catch (error) {
+    return res.status(error.status || 500).json({ message: error.message || "Failed to create project from template" });
+  }
+};
+
+exports.saveAsTemplate = async (req, res) => {
+  try {
+    const project = await projectService.getProjectById(req.params.id, req.user);
+    const { projectTitle } = req.body || {};
+    const count = await require("../models").Project.count();
+    const template = await require("../models").Project.create({
+      project_code: `TMPL-${count + 1}`,
+      project_title: projectTitle || `${project.project_title} (Template)`,
+      owner_name: req.user.name || req.user.username,
+      template: project.template,
+      description: project.description,
+      business_hours: project.business_hours,
+      task_layout: project.task_layout,
+      tags: project.tags,
+      rollup: project.rollup,
+      project_access: "Private",
+      status: "Active",
+      progress: 0,
+      budget_usd: project.budget_usd,
+      is_template: true,
+      createdById: req.user.id,
+    });
+    return res.status(201).json(template);
+  } catch (error) {
+    return res.status(error.status || 500).json({ message: error.message || "Failed to save as template" });
+  }
+};

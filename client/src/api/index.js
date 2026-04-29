@@ -16,3 +16,6 @@ export * from "./roles";
 export * from "./organizations";
 export * from "./taskLists";
 export * from "./search";
+export * from "./discussions";
+export * from "./announcements";
+export * from "./sprints";

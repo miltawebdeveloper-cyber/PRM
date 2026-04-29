@@ -115,6 +115,7 @@ function CreateTask() {
   const [taskActivity, setTaskActivity] = useState([]);
   const [discussionLoading, setDiscussionLoading] = useState(false);
   const [commentDraft, setCommentDraft] = useState("");
+  const [showMentions, setShowMentions] = useState(false);
   const [now, setNow] = useState(Date.now());
   const [viewMode, setViewMode] = useState("list");
   const [columnSearch, setColumnSearch] = useState("");
@@ -1901,10 +1902,35 @@ function CreateTask() {
                   <textarea
                     className="text-area"
                     value={commentDraft}
-                    onChange={(e) => setCommentDraft(e.target.value)}
-                    placeholder="Add a note, update, or mention context for the team"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCommentDraft(val);
+                      if (/@(\w*)$/.test(val)) {
+                        setShowMentions(true);
+                      } else {
+                        setShowMentions(false);
+                      }
+                    }}
+                    placeholder="Add a note, update, or mention context (@username) for the team"
                     required
                   />
+                  {showMentions && (
+                    <div className="mentions-dropdown" style={{ border: '1px solid #ccc', maxHeight: '100px', overflowY: 'auto', background: '#fff', position: 'absolute', zIndex: 10, width: 'calc(100% - 32px)', borderRadius: '4px', boxShadow: '0 2px 5px rgba(0,0,0,0.1)' }}>
+                      {employees.filter(emp => emp.username.toLowerCase().includes((commentDraft.match(/@(\w*)$/)?.[1] || "").toLowerCase())).map(emp => (
+                        <div 
+                          key={emp.id} 
+                          style={{ padding: '8px', cursor: 'pointer', borderBottom: '1px solid #eee' }} 
+                          onClick={() => {
+                            const val = commentDraft.replace(/@(\w*)$/, `@${emp.username} `);
+                            setCommentDraft(val);
+                            setShowMentions(false);
+                          }}
+                        >
+                          <strong>{emp.name}</strong> (@{emp.username})
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <button type="submit" disabled={!commentDraft.trim()}>
                     Post Comment
                   </button>

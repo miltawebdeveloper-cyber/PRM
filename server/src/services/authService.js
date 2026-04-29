@@ -3,6 +3,7 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { User, Role, Client } = require("../models");
 const { logActivity } = require("./auditLogService");
+const { sendPasswordResetEmail } = require("./emailService");
 
 async function login({ email, username, password }) {
   if ((!email && !username) || !password) {
@@ -97,9 +98,18 @@ async function forgotPassword(email) {
   user.reset_token_expires = new Date(Date.now() + 60 * 60 * 1000);
   await user.save();
 
+  const appUrl = process.env.APP_URL || "http://localhost:3000";
+  const resetUrl = `${appUrl}/reset-password?token=${token}`;
+
+  await sendPasswordResetEmail({
+    name: user.name || user.username,
+    email: user.email,
+    resetToken: token,
+    resetUrl,
+  });
+
   return {
-    message: "Password reset token generated. Share this token with the user to complete the reset.",
-    reset_token: token,
+    message: "Password reset link sent to your email address.",
     expires_in: "1 hour",
   };
 }

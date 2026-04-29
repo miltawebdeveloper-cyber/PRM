@@ -5,6 +5,8 @@ const { sendTaskAssignmentEmail } = require("../services/emailService");
 const { createNotification }      = require("../services/notificationService");
 const { getTaskActivity, logActivity } = require("../services/auditLogService");
 const { executeWorkflows } = require("../services/workflowEngine");
+const fs = require("fs");
+const { parse } = require("csv-parse");
 
 async function notifyTaskAssignee({ assignee, actorId, task, dueDate }) {
   if (!assignee || Number(assignee.id) === Number(actorId)) return;
@@ -759,3 +761,52 @@ async function notifyWatchers(taskId, actorId, action, message) {
     }));
   return Promise.all(promises);
 }
+
+exports.importTasks = async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ message: "No CSV file uploaded" });
+    }
+
+    const fileContent = fs.readFileSync(req.file.path, "utf8");
+    parse(fileContent, { columns: true, skip_empty_lines: true }, async (err, records) => {
+      if (err) {
+        return res.status(400).json({ message: "Failed to parse CSV file" });
+      }
+
+      const tasksToCreate = [];
+      const { projectId } = req.body;
+      
+      let index = 0;
+      for (const record of records) {
+        const taskName = record.task_name || record.taskName || record.title;
+        if (!taskName) continue;
+
+        const taskId = `IMP-${Date.now()}-${index++}`; 
+
+        tasksToCreate.push({
+          task_id: taskId,
+          task_name: taskName,
+          description: record.description || taskName,
+          status: record.status || "Not Started",
+          priority: record.priority || "Medium",
+          due_date: record.due_date || new Date(),
+          estimated_hours: record.estimated_hours ? Number(record.estimated_hours) : null,
+          managerId: req.user.id,
+          projectId: projectId || null,
+          organizationId: req.user.organizationId,
+        });
+      }
+
+      if (tasksToCreate.length > 0) {
+        const createdTasks = await Task.bulkCreate(tasksToCreate);
+        return res.json({ message: `Successfully imported ${createdTasks.length} tasks`, count: createdTasks.length });
+      } else {
+        return res.json({ message: "No valid tasks found in CSV", count: 0 });
+      }
+    });
+  } catch (error) {
+    console.error("Import error:", error);
+    res.status(500).json({ message: "Task import failed" });
+  }
+};

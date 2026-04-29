@@ -19,3 +19,23 @@ export async function getUtilizationReport() {
   const response = await api.get("/reports/utilization");
   return response.data;
 }
+
+export async function getHeatmapReport() {
+  const response = await api.get("/reports/heatmap");
+  return response.data;
+}
+
+export async function getProfitabilityReport() {
+  const response = await api.get("/reports/profitability");
+  return response.data;
+}
+
+export async function getWorkloadReport() {
+  const response = await api.get("/reports/workload");
+  return response.data;
+}
+
+export async function getPortfolioReport() {
+  const response = await api.get("/reports/portfolio");
+  return response.data;
+}

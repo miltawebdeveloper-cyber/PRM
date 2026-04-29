@@ -58,3 +58,23 @@ exports.getHeatmapReport = async (_req, res) => {
     return res.status(error.status || 500).json({ message: error.message || "Failed to generate heatmap report" });
   }
 };
+
+exports.getWorkloadReport = async (_req, res) => {
+  try {
+    const report = await reportsService.getWorkloadReport();
+    return res.json(report);
+  } catch (error) {
+    console.error("Workload report error:", error);
+    return res.status(error.status || 500).json({ message: error.message || "Failed to generate workload report" });
+  }
+};
+
+exports.getPortfolioReport = async (_req, res) => {
+  try {
+    const report = await reportsService.getPortfolioReport();
+    return res.json(report);
+  } catch (error) {
+    console.error("Portfolio report error:", error);
+    return res.status(error.status || 500).json({ message: error.message || "Failed to generate portfolio report" });
+  }
+};
