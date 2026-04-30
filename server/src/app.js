@@ -33,6 +33,9 @@ const { apiRateLimit } = require("./middleware/rateLimit");
 
 const app = express();
 
+// Required for Render/Heroku — they sit behind a reverse proxy
+app.set("trust proxy", 1);
+
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",")
   : ["http://localhost:3000"];
