@@ -41,17 +41,19 @@ io.on("connection", (socket) => {
 });
 const { startDeadlineReminderJob } = require("./src/jobs/deadlineReminder");
 
-// Static files from React build
-app.use(express.static(path.join(__dirname, "../client/build")));
-
-// Handle React routing, return all requests to React app
-app.use((req, res, next) => {
-  if (req.method === "GET") {
-    res.sendFile(path.join(__dirname, "../client/build", "index.html"));
-  } else {
-    next();
-  }
-});
+// Static files from React build (only when build folder exists — not needed when frontend is on Vercel)
+const buildPath = path.join(__dirname, "../client/build");
+const fs = require("fs");
+if (fs.existsSync(buildPath)) {
+  app.use(express.static(buildPath));
+  app.use((req, res, next) => {
+    if (req.method === "GET") {
+      res.sendFile(path.join(buildPath, "index.html"));
+    } else {
+      next();
+    }
+  });
+}
 
 const PORT = process.env.PORT || 5000;
 const ADMIN_NAME = process.env.ADMIN_NAME || "System Admin";
